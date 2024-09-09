@@ -1,0 +1,17 @@
+name: mayavi_mol-view
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pip
+  - pip: 
+    - mayavi
+    - PyQt5
+    - configobj
+    - numpy==1.26.4
+  - libstdcxx-ng
+  - rdkit 
+  - jupyter
+  - notebook
+  - ipyevents
+# prefix: /home/bruno/0_Software/miniconda3/envs/mayavi
