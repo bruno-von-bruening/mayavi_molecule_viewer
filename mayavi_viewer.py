@@ -12,6 +12,9 @@ import numpy as  np
 from mayavi import mlab
 import mayavi.tools
 
+# Global parameters
+see_through_options=[ x.upper() for x in ['front','back','none']]
+
 # Plot molecules
 def plot_mol(geometry_object=None, coords=None, atom_types=None ):
     atom_color_di={ 'O':(1,0,0), 'H':(0.9,0.9,0.9) , 'N':(0,0,1), 'C':(0,0,0)}
@@ -65,9 +68,12 @@ def plot_mol(geometry_object=None, coords=None, atom_types=None ):
         # Have a look into this to fuse it together
         # https://stackoverflow.com/questions/54144002/drawing-disconnected-lines-in-mayavi-calling-mlab-plot3d-once
     return atom 
-
     
-def plot_surface(xyz=None, esp=None, triangles=None, opacity=1):
+def plot_surface(xyz=None, esp=None, triangles=None, opacity=1, see_through=None, plot_colorbar=True):
+    if not type(see_through)==type(None):
+        if not see_through.upper() in see_through_options:
+            raise Exception(f"Provided option for see through is not recognized: {see_through}, options are \
+                    {see_through_options}")
     xyz=[ list(x) for x in xyz ]
     esp=[ x for x in esp ]
     xyz*=2
@@ -83,14 +89,28 @@ def plot_surface(xyz=None, esp=None, triangles=None, opacity=1):
         minimum=min( entry[:3] )
     #    lut[i, -1] = 255-minimum*0.9
     surf.module_manager.scalar_lut_manager.lut.table = lut
+
+    if type(see_through)==type(None):
+        pass
+    elif see_through.lower() in ['back']:
+        surf.actor.property.frontface_culling = True
+    elif see_through.lower() in ['front']:
+        surf.actor.property.backface_culling = True
+    elif see_through.lower() in ['none']:
+        pass
+    else:
+        raise Exception(f"Received key for see_through option \'{see_through}\' but no case implemented")
     #surf=mayavi.tools.pipeline.triangular_mesh_source(xyz.T[0], xyz.T[1], xyz.T[2], triangles[:],scalars=esp,
     #name='surface')
+    if plot_colorbar:
+        mayavi.mlab.colorbar(object=surf, title=None, orientation='vertical', nb_labels=None, nb_colors=None,
+                label_fmt='%.1f')
     return surf
     #mlab.triangular_mesh(xyz.T[0], xyz.T[1], xyz.T[2], triangles[:], opacity=0.95, representation='wireframe', scalars=esp)
     #mlab.triangular_mesh(xyz.T[0], xyz.T[1], xyz.T[2], triangles[0::2])
 
 #molecule=mlab.figure(figure='molecule')
-def plot_esp_surface(esp=None, geom=None, opacity=1):
+def plot_esp_surface(esp=None, geom=None, opacity=1, see_through=None):
     """ Provide an esp map (as .map file) and geometry (as .mom file).
     This function will generate a mayavi plot!"""
     # Input checks
@@ -102,8 +122,9 @@ def plot_esp_surface(esp=None, geom=None, opacity=1):
     # Plot settings
     #   Colors
     background_color=(1,1,1)
+    foreground_color=(0,0,0)
     #   Mayavi figure
-    figure = mlab.figure(1, bgcolor=background_color, size=(350, 350))
+    figure = mlab.figure(1, bgcolor=background_color, fgcolor=foreground_color, size=(350, 350))
     mlab.clf()
 
     # Get the map data
@@ -117,7 +138,7 @@ def plot_esp_surface(esp=None, geom=None, opacity=1):
     geom.connec()
 
     # Plot
-    surface=plot_surface(xyz=xyz, esp=esp, triangles=triangles, opacity=opacity)
+    surface=plot_surface(xyz=xyz, esp=esp, triangles=triangles, opacity=opacity, see_through=see_through)
     molecule=plot_mol(geometry_object=geom)#,atom_coords, atom_types)
     #mlab.show()
     return [surface] 
@@ -130,10 +151,13 @@ if __name__ == '__main__':
     par.add_argument('-map', help='.map file')
     par.add_argument('-geom', help='file with molecular geometry (for molecule visualization)')
     par.add_argument('-opacity', help='Opacity of surface', type=float, default=1.)
+    par.add_argument('-see_through', help='Allows one-side see through', type=str, choices=see_through_options,
+            default=None)
     args=par.parse_args()
     map_fi=args.map
     mom_fi=args.geom
     opacity=args.opacity
+    see_through=args.see_through
 
-    plot_esp_surface(esp=map_fi, geom=mom_fi, opacity=opacity)
+    plot_esp_surface(esp=map_fi, geom=mom_fi, opacity=opacity, see_through=see_through)
     mlab.show()
