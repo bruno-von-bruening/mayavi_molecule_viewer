@@ -16,7 +16,7 @@ import mayavi.tools
 see_through_options=[ x.upper() for x in ['front','back','none']]
 
 # Plot molecules
-def plot_mol(geometry_object=None, coords=None, atom_types=None ):
+def plot_mol(geometry_object=None, coords=None, atom_types=None, dont_show_indices=False ):
     atom_color_di={ 'O':(1,0,0), 'H':(0.9,0.9,0.9) , 'N':(0,0,1), 'C':(0,0,0)}
     atom_scale_di={ 'O':1, 'H':0.75 , 'N':1, 'C':1}
     if isinstance(geometry_object, m_obj.geometry):
@@ -32,7 +32,8 @@ def plot_mol(geometry_object=None, coords=None, atom_types=None ):
         at_col=atom_color_di[tag]    
         at_scl=atom_scale_di[tag]
         atom = mlab.points3d( *list(coor), scale_factor=at_scl, resolution=50, color=at_col, scale_mode='none')
-        label = mlab.text3d(*list(coor) , f"{i}", color=at_col)
+        if not dont_show_indices:
+            label = mlab.text3d(*list(coor) , f"{i}", color=at_col)
 
     # Plot the connections
     if type(adj_mat)==type(None):
@@ -105,12 +106,14 @@ def plot_surface(xyz=None, esp=None, triangles=None, opacity=1, see_through=None
     if plot_colorbar:
         mayavi.mlab.colorbar(object=surf, title=None, orientation='vertical', nb_labels=None, nb_colors=None,
                 label_fmt='%.1f')
+
     return surf
     #mlab.triangular_mesh(xyz.T[0], xyz.T[1], xyz.T[2], triangles[:], opacity=0.95, representation='wireframe', scalars=esp)
     #mlab.triangular_mesh(xyz.T[0], xyz.T[1], xyz.T[2], triangles[0::2])
 
 #molecule=mlab.figure(figure='molecule')
-def plot_esp_surface(esp=None, geom=None, opacity=1, see_through=None):
+def plot_esp_surface(esp=None, geom=None, opacity=1, see_through=None,
+        dont_show_indices=False):
     """ Provide an esp map (as .map file) and geometry (as .mom file).
     This function will generate a mayavi plot!"""
     # Input checks
@@ -124,7 +127,7 @@ def plot_esp_surface(esp=None, geom=None, opacity=1, see_through=None):
     background_color=(1,1,1)
     foreground_color=(0,0,0)
     #   Mayavi figure
-    figure = mlab.figure(1, bgcolor=background_color, fgcolor=foreground_color, size=(350, 350))
+    figure = mlab.figure(1, bgcolor=background_color, fgcolor=foreground_color, size=(500, 500))
     mlab.clf()
 
     # Get the map data
@@ -139,7 +142,7 @@ def plot_esp_surface(esp=None, geom=None, opacity=1, see_through=None):
 
     # Plot
     surface=plot_surface(xyz=xyz, esp=esp, triangles=triangles, opacity=opacity, see_through=see_through)
-    molecule=plot_mol(geometry_object=geom)#,atom_coords, atom_types)
+    molecule=plot_mol(geometry_object=geom, dont_show_indices=dont_show_indices)#,atom_coords, atom_types)
     #mlab.show()
     return [surface] 
 
@@ -153,11 +156,14 @@ if __name__ == '__main__':
     par.add_argument('-opacity', help='Opacity of surface', type=float, default=1.)
     par.add_argument('-see_through', help='Allows one-side see through', type=str, choices=see_through_options,
             default=None)
+    par.add_argument('-no_indices', help='Do_not show indices', action='store_true', default=False)
     args=par.parse_args()
     map_fi=args.map
+    dont_show_indices=args.no_indices
     mom_fi=args.geom
     opacity=args.opacity
     see_through=args.see_through
 
-    plot_esp_surface(esp=map_fi, geom=mom_fi, opacity=opacity, see_through=see_through)
+    plot_esp_surface(esp=map_fi, geom=mom_fi, opacity=opacity, see_through=see_through,
+            dont_show_indices=dont_show_indices)
     mlab.show()
