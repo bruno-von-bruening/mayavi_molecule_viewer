@@ -147,14 +147,60 @@ class file_reader():
             return data
         else:
             raise Exception()
-        
+
 class read_map_file(file_reader):
     comtag=['!']
     dic={}
     def __init__(self, inp_fi):
-        file_reader.__init__(self,inp_fi)
-        self.extract_data()
-    def extract_data(self):
+        def ending(input, ending):
+            """ Case insensitive """
+            if input.lower().endswith(ending.lower()):
+                return True
+            else:
+                False
+        if ending(inp_fi, '.map'):
+            file_reader.__init__(self,inp_fi)
+            self.extract_data_from_map_file()
+        elif ending(inp_fi, '.json'):
+            self.extract_data_from_json(inp_fi)
+        else:
+            raise Exception()
+    def extract_data_from_json(self, input):
+        import json
+        with open(input, 'r') as rd:
+            data=json.load(rd)
+        
+        length_units_key='length_units'
+        energy_units_key='energy_units'
+        triangles_keys='faces'
+        points_keys='vertices'
+        values_keys='scalars'
+        mandatory_keys=[triangles_keys, points_keys, length_units_key, values_keys, energy_units_key]
+        for key in mandatory_keys:
+            assert key in data.keys(), f"No key {key} in {list(data.keys())}"
+        assert data[length_units_key].upper()=='BOHR', f"Unexpected unit {data[length_units_key]}"
+
+        points=data[points_keys]
+        no_pts=len(points)
+        values=data[values_keys]
+        triangles=data[triangles_keys]
+        energy_units=data[energy_units_key]
+        length_units=data[length_units_key]
+
+        assert np.array(points).shape==(no_pts, 3)
+        assert len(points)==len(values), f"{len(points)}, {len(values)}"
+        #raise Exception(len(points),len(triangles))
+        self.dic.update( {
+            'no_pts': no_pts,
+            'points': points,
+            'values': values,
+            'triangles': triangles,
+            'energy_units': energy_units,
+            'length_units': length_units,
+        })
+        
+
+    def extract_data_from_map_file(self):
         # Get the number of points
         point_lino=self.get_line_no(match='POINTS', single=True)
         point_line=self.lines_nocom[point_lino]
@@ -229,7 +275,8 @@ class read_mom_file(file_reader):
         empty_lines=self.get_line_no(match=r'[ ]*', fullmatch=True)
         empty_lines+=self.get_line_no(match='', fullmatch=True)
         empty_lines=sorted( list(set(empty_lines)) )
-        atom_lines=self.get_line_no(match=r'[A-Z][a-z]?[0-9]* ')
+        atom_line_match=r'[ ]*[A-Za-z][A-Za-z]?[_]?[0-9]* .*'
+        atom_lines=self.get_line_no(match=r'[ ]*[A-Za-z][A-Za-z]?[_]?[0-9]* .*', fullmatch=True)
 
         start_end=[]
         atom_entries=[]
@@ -243,7 +290,7 @@ class read_mom_file(file_reader):
                 # In case the document does not end after this line
                 elif e<len(self.lines)-1:
                     if not e+1 in atom_lines:
-                        raise Exception(f"Line {e} is empty, Total lines {len(self.lines)}")
+                        raise Exception(f"Line {e} is empty, Total lines {len(self.lines)}, Next line is {self.lines[e+1]}")
             if i==len(empty_lines)-1:
                 if e!=len(self.lines)-1:
                     raise Exception
@@ -295,7 +342,7 @@ class grid():
         elif str==type(inp): # Read a file
             # Read file according to extension
             self.input_file=inp
-            if inp.endswith('.map'):
+            if inp.endswith('.map') or inp.endswith('.json'):
                 info_dict=read_map_file(inp).dic
                 self.grid_points=info_dict['points']
                 self.values=info_dict['values']
