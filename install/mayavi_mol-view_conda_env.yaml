@@ -1,0 +1,19 @@
+name: mayavi_MolView
+channels:
+   - conda-forge
+   - conda-forge/label/libint_dev
+   - defaults
+dependencies:
+  - python=3.12.2
+  - pip
+  - numpy=1.26.4
+  - libstdcxx-ng
+  - pip:
+    - build
+    - vtk==9.3
+    - mayavi==4.8.2
+    - PyQT5==5.15.11
+    - configobj
+    - rdkit
+    - jupyter==1.0.0
+    - ipyevents==2.0.2

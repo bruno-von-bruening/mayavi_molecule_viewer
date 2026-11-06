@@ -1,0 +1,11 @@
+[project]
+name = "mayavi_molecule_viewer"
+version = "0.0.0"
+description = ''
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+

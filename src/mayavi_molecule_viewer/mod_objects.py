@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Module for objects
+from . import *
 
 import os
 import re
@@ -236,11 +237,24 @@ class geometry():
     multiplicity_ion=None
     charge=None
     adjacency_matrix=None
-    def __init__(self,coordinates=None, atom_types=None):
-        if type(coordinates) != type(None):
-            self.coordinates=coordinates
-        if type(atom_types) != type(None) :
-            self.atom_types=atom_types
+    def __init__(self,input):#coordinates=None, atom_types=None):
+        self.ifi=input
+        with open(self.ifi) as rd:
+            lines=rd.readlines()
+            num_nuc=int(lines[0])
+            self.atom_types=[]
+            self.coordinates=[]
+            assert len(lines)==num_nuc+2
+            for l in lines[2:]:
+                at_ty, *coords=l.split()
+                assert len(coords)==3
+                self.atom_types.append(at_ty)
+                BOHR_TO_ANGSTROM=0.529177
+                self.coordinates.append([float(x)/BOHR_TO_ANGSTROM for x in coords])
+        #if type(coordinates) != type(None):
+        #    self.coordinates=coordinates
+        #if type(atom_types) != type(None) :
+        #    self.atom_types=atom_types
     def connec(self):
         #from rdkit.Chem import AllChem,rdDetermineBonds
         if type(self.ifi) != type(None):
