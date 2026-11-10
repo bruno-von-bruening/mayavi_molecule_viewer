@@ -10,6 +10,11 @@ import mayavi.tools
 # Global parameters
 see_through_options=[ x.upper() for x in ['front','back','none']]
 
+@validate_call
+def check_coordiantes(array_0:np.ndarray, array_1:np.ndarray):
+    comp_thres=1.e-8
+    assert array_0.shape==array_1.shape
+    assert max( (array_1-array_0).reshape(-1) )< comp_thres
 
 def read_esp(map_input):
     # Input checks
@@ -20,8 +25,8 @@ def read_esp(map_input):
             if isinstance(esp_map, type(None)):
                 esp_map=the_map
             else:
-                check_coordiantes(esp_map.grid_points, the_map.grid_points)
-                esp_map.values+=the_map.values
+                check_coordiantes(np.array(esp_map.grid_points), np.array(the_map.grid_points))
+                esp_map.values+= np.array(esp_map.values)+np.array(the_map.values)
         return esp_map
     if isinstance(map_input, type(None)):
         raise Exception(f"Provided invalid input for esp_map {map_input}")
@@ -39,6 +44,11 @@ def read_geom(geom_input):
     elif geom_input.endswith('.mom'):
         multipoles=m_obj.multipoles(geom_input)
         geom = multipoles.return_geom(connectivity=True)
+    elif geom_input.lower().endswith('.fchk'):
+        from qcp_objects.objects.properties import geometry
+        geom=geometry(geom_input)
+    else:
+        raise NotImplementedError(f"Cannot process file extension of {geom_input}")
     try:
         geom.connec()
     except Exception as ex:
@@ -59,17 +69,13 @@ def plot_esp_surface(
     This function will generate a mayavi plot!"""
 
 
-    def check_coordiantes(array_0, array_1):
-        comp_thres=1.e-8
-        assert array_0.shape==array_1.shape
-        assert max( (array_1-array_0).reshape(-1) )< comp_thres
 
     # read the esp map
     esp_map=read_esp(esp)
     if not esp_ref is None:
         esp_ref_map=read_esp(esp_ref)
-        check_coordiantes(esp_map.grid_points, esp_ref_map.grid_points)
-        esp_values=esp_map.values-esp_ref_map.values
+        check_coordiantes(np.array(esp_map.grid_points), np.array(esp_ref_map.grid_points))
+        esp_values=np.array(esp_map.values)-np.array(esp_ref_map.values)
     else:
         esp_values=esp_map.values
 

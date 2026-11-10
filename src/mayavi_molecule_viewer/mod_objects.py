@@ -5,7 +5,8 @@ from . import *
 import os
 import re
 import numpy as np
-import rdkit.Chem as rdchem; from rdkit.Chem import rdDetermineBonds, rdmolops
+
+# import rdkit.Chem as rdchem; from rdkit.Chem import rdDetermineBonds, rdmolops
 
 class file_reader():
     lines=None
@@ -229,50 +230,61 @@ class read_map_file(file_reader):
             'triangles': triangles,
         })
 
-class geometry():
-    ifi=None
-    coordinates=None
-    atom_types=None
-    multiplicity=None
-    multiplicity_ion=None
-    charge=None
-    adjacency_matrix=None
-    def __init__(self,input):#coordinates=None, atom_types=None):
-        self.ifi=input
-        with open(self.ifi) as rd:
-            lines=rd.readlines()
-            num_nuc=int(lines[0])
-            self.atom_types=[]
-            self.coordinates=[]
-            assert len(lines)==num_nuc+2
-            for l in lines[2:]:
-                at_ty, *coords=l.split()
-                assert len(coords)==3
-                self.atom_types.append(at_ty)
-                BOHR_TO_ANGSTROM=0.529177
-                self.coordinates.append([float(x)/BOHR_TO_ANGSTROM for x in coords])
-        #if type(coordinates) != type(None):
-        #    self.coordinates=coordinates
-        #if type(atom_types) != type(None) :
-        #    self.atom_types=atom_types
-    def connec(self):
-        #from rdkit.Chem import AllChem,rdDetermineBonds
-        if type(self.ifi) != type(None):
-            raw_mol = rdchem.rdmolfiles.MolFromXYZFile(self.ifi)
-            rdmol = rdchem.Mol(raw_mol)
-        else:
-            mol_block=f"{len(self.coordinates)}\n\n"
-            for ty,coor in zip( self.atom_types, self.coordinates):
-                bohr_to_angstrom=0.529177249
-                coor=[f"{float(x)*bohr_to_angstrom}" for x in coor]
-                mol_block+=f"{ty} {' '.join(coor)}\n"
-            rdmol=rdchem.MolFromXYZBlock(mol_block)
-            #mol_block = rdchem.MolToMolBlock(rdmol)
-        rdDetermineBonds.DetermineBonds(rdmol, charge=0)
-        self.adjacency_matrix=np.array(rdmolops.GetAdjacencyMatrix(rdmol, useBO=True))
-        #m_io.out().warn(f"Implement check for adjacency matrix, ie total valence electrons, number of bonds per species")
-        #self.adj_mat=rdchem.rdmolops.GetAdjacencyMatrix(rdmol, useBO=True)
-    #@classmethod
+if False:
+    class geometry(BaseModel):
+        model_config = ConfigDict(arbitrary_types_allowed=True)
+        ifi:str=None
+        coordinates:List[Tuple[float,float,float]]
+        atom_types:List[str]
+        multiplicity:int=None
+        multiplicity_ion:int=None
+        charge:int=None
+        adjacency_matrix:np.ndarray=None
+        def __init__(self,*args,**kwargs):#coordinates=None, atom_types=None):
+            if len(args)==1:
+                kwargs.update(ifi=args[0])
+                with open(kwargs['ifi']) as rd:
+                    lines=rd.readlines()
+                    num_nuc=int(lines[0])
+                    atom_types=[]
+                    coordinates=[]
+                    assert len(lines)==num_nuc+2
+                    for l in lines[2:]:
+                        at_ty, *coords=l.split()
+                        assert len(coords)==3
+                        atom_types.append(at_ty)
+                        BOHR_TO_ANGSTROM=0.529177
+                        coordinates.append([float(x)/BOHR_TO_ANGSTROM for x in coords])
+                kwargs.update(
+                    atom_types=atom_types,
+                    coordinates=coordinates
+                )
+            super().__init__(**kwargs)
+            
+            #if type(coordinates) != type(None):
+            #    self.coordinates=coordinates
+            #if type(atom_types) != type(None) :
+            #    self.atom_types=atom_types
+        def connec(self):
+            #from rdkit.Chem import AllChem,rdDetermineBonds
+            if type(self.ifi) != type(None):
+                raw_mol = rdchem.rdmolfiles.MolFromXYZFile(self.ifi)
+                rdmol = rdchem.Mol(raw_mol)
+            else:
+                mol_block=f"{len(self.coordinates)}\n\n"
+                for ty,coor in zip( self.atom_types, self.coordinates):
+                    bohr_to_angstrom=0.529177249
+                    coor=[f"{float(x)*bohr_to_angstrom}" for x in coor]
+                    mol_block+=f"{ty} {' '.join(coor)}\n"
+                rdmol=rdchem.MolFromXYZBlock(mol_block)
+                #mol_block = rdchem.MolToMolBlock(rdmol)
+            rdDetermineBonds.DetermineBonds(rdmol, charge=0)
+            self.adjacency_matrix=np.array(rdmolops.GetAdjacencyMatrix(rdmol, useBO=True))
+            #m_io.out().warn(f"Implement check for adjacency matrix, ie total valence electrons, number of bonds per species")
+            #self.adj_mat=rdchem.rdmolops.GetAdjacencyMatrix(rdmol, useBO=True)
+        #@classmethod
+else:
+    from qcp_objects.objects.properties import geometry
 
 
 
@@ -395,8 +407,8 @@ class multipoles():
                 self.atom_coordinates=multipoles_raw.atom_coordinates
             else:
                 raise Exception
-    def return_geom(self, connectivity=False):
-        geom=geometry(atom_types=self.atom_types, coordinates=self.atom_coordinates)
+    def return_geom(self, connectivity=False) -> geometry:
+        geom=geometry(atom_types=self.atom_types, coordinates=self.atom_coordinates, length_units='BOHR')
         geom.connec()
         if connectivity:
             geom.connec()

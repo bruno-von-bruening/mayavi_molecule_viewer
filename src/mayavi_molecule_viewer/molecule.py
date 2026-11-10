@@ -9,6 +9,7 @@ def plot_mol(geometry_object:m_obj.geometry, coords=None, atom_types=None,
     config: mayavi_config=mayavi_config()
 ):
     
+    geometry_object.units.LENGTH='BOHR'
     coords=geometry_object.coordinates
     atom_types=geometry_object.atom_types
     adj_mat=geometry_object.adjacency_matrix
