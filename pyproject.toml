@@ -8,6 +8,10 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
+dependencies = [ # following restrictions are based on probelms occuring on 2026 Nov 10
+   'puremagic<2.0', # if interactive version (puremagic appears in newer version) does not work with 2.0
+   'numpy<2.0', # mayavi did not work with numpy 2.0 
+]
 
 [tool.setuptools]
 script-files = ["bin/mayavi_MolView.py" ]
