@@ -10,6 +10,8 @@ dependencies:
   - libstdcxx-ng
   - pip:
     - build
+    - rich # For prettily formatted error messages
+    - setuptools-scm # For handling of pyproject.toml installation
     - vtk==9.3
     - mayavi==4.8.2
     - PyQT5==5.15.11

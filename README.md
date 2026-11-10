@@ -3,7 +3,7 @@
 ## Installation
 First create a conda environment with the provided file:
 ```
-conda env create --file=install/mayavi_mol-view_conda_env.yaml
+conda env create -f install/mayavi_mol-view_conda_env.yaml
 ```
 at the moment the package versions are quite tightly defined and if one want to install newer version that may require
 some trial-and-error with these settings.
